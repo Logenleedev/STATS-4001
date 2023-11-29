@@ -1,0 +1,131 @@
+---
+title: "Final Project"
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+date: '2023-11-10'
+---
+
+```{r setup, include=FALSE}
+library("tmap")
+library("tidyverse")
+library("dplyr")
+library("heatmaply")
+library("sf")
+library("corrplot")
+library("RColorBrewer")
+library("reticulate")
+library("readr")
+library("GGally")
+library("e1071")
+library("lubridate")
+library("grid")
+library("ggpubr")
+library("geojsonsf")
+```
+
+```{r}
+
+data <- read_csv("diabetes.csv")
+```
+
+```{r}
+colnames(data)
+```
+```{r}
+data
+
+```
+```{r}
+test <- na.omit(data)
+test
+```
+```{r}
+colnames(test)
+```
+
+
+```{r}
+heatmaply_cor(x = cor(test), xlab = "Features", 
+              ylab = "Features", k_col = 2, k_row = 2)
+```
+
+```{r}
+cor_matrix <- cor(test)
+
+print(cor_matrix)
+```
+```{r}
+summary(test)
+```
+```{r}
+ggplot(test, aes(test$Outcome, fill = test$Outcome, color = Outcome)) + 
+  geom_bar() +
+  labs(title = "Diabetes Outcome", x = "Diabetes") +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+df <- test %>%
+  gather(key = "variable", value = "value")
+
+# Plot the distribution of all columns in one graph
+ggplot(df, aes(x = value, fill = variable)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Distribution of All Columns",
+       x = "Value",
+       y = "Density") +
+  theme_minimal() + 
+  ylim(c(0, 0.2)) +
+  xlim(c(0, 250)) 
+
+```
+
+```{r}
+# Calculate skewness for each column
+skewness_values <- sapply(test, skewness)
+
+# Print the skewness values
+print(skewness_values)
+
+```
+
+```{r}
+# Separate glucose levels for diabetic and non-diabetic individuals
+blood_pressure_age_lt_30 <- test$BloodPressure[test$Age <= 30]
+blood_pressure_age_gt_30 <- test$BloodPressure[test$Age > 30]
+```
+
+```{r}
+t_test_result <- t.test(blood_pressure_age_lt_30, blood_pressure_age_gt_30)
+print(t_test_result)
+```
+
+```{r}
+cor_test_result <- cor.test(test$Age, test$BloodPressure)
+print(cor_test_result)
+```
+
+
+```{r}
+
+
+test1 <- subset(test, BloodPressure != 0)
+
+
+# Scatter plot with color based on another variable
+ggplot(test1, aes(x = Age, y = BloodPressure, color = Outcome)) +
+  geom_point() +
+  labs(title = "Scatter Plot of BloodPressure vs. Age",
+       x = "Age",
+       y = "BloodPressure",
+       color = "Outcome") +
+       geom_smooth(method = "lm", se = TRUE, aes(group = 1)) +
+       annotate("text", x = Inf, y = Inf, hjust = 1, vjust = 1,
+           label = paste("Regression Coefficient: ",
+                         round(coef(lm(Age ~ BloodPressure, data = data))[2], 4)),
+           color = "red")
+  theme_minimal()
+```
